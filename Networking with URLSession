@@ -1,0 +1,83 @@
+REST API
+* A REST API is an application program interface that uses HTTP requests to transfer data between a client and a server
+* AKA restful web service
+
+URLSession
+* Every URLSession requires a URLSessionConfiguration instance
+    * Configuration controls things such as:
+        * network service type, timeouts, caching, http headers
+* From URLSession, we create URLSessionTask instances to make service requests
+* It’s more efficient to create multiple tasks per session than to create multiple sessions for multiple tasks
+    * Example: One session for downloading a video and another session for downloading a video in the background
+* You can handle the server response in two different ways:
+    * Completion handler
+    * Delegation
+* You can use URLSession.shared for no configuration, quick data tasks 
+    * Must use completion handler, can’t use delegation
+* URLSessionConfiguration:
+    * .default 
+        * Uses persistent disk based cache, except when result is downloaded to a file
+        * Stores credentials in the user’s keychain
+        * Default values for properties
+    * .ephemeral
+        * Same as default except doesn’t store cookies, credentials or cache data to disk
+        * Useful for privacy because none of the data is persisted
+    * background(withIdentifier:)
+        * Allows app to transfer data while in the background
+        * hands control over to system which handles transfer in a separate process
+        * must provide ID in case where system terminates and relaunches the app to reconstruct session
+
+Network Reliability
+* configuration.allowsCellularAcess - class var to set if app is allowed to use data
+* configuration.waitsForConnectivity - allows app to periodic check for network and attempt to retry task
+
+* If you want to allow for cellular access you can use Multipath TCP
+    * .handover - switches to cellular when your app loses wi-fi
+    * .interact - networking switches to cellular when the wifi signal gets weak (what siri uses)
+
+URLSessionTask
+* URLSessionDataTask
+    * response in memory
+    * not supported in background sessions
+* URLSessionUploadTask
+    *  Easier to provide request body
+* URLSessionDownloadTask
+    * response written to file on disk
+
+URLRequest
+* Reasons to create requests:
+    * Modify the HTTP method, headers and body before sending the request
+    * Override configuration settings for the request
+* If configuration value is more restrictive, it will take precedence
+* HTTP Headers
+    * Pass additional information with a request or response
+
+URLSessionDataTask
+* Meant for short tasks like authentication or fetching a token
+* DataTasks save the response in memory
+
+URLSessionDownloadTask
+* Saves the result to a file 
+* Response returns a URL pointing to the location on the file system where the object is saved
+* This location is temporary, so we need to read and process the data or save it to a permanent location
+* downloadTask has features where
+    * if it’s canceled or fails before completing the download you can save the resumeData and resume the download later
+    * Converts server-side errors into NSError objects, reports via completionHandler error param
+
+Priority Settings
+* You can suggest priority levels at different levels of the URLSession hierarchy
+* SessionConfiguration can tell the system that it’s transferring a specific type of data. OS can use this info to set priorities and balance performance against battery load.
+    * networkServiceType = hint to OS
+* URLSessionTask
+    * priority hint to server 0 (low) - 1 (high); default = 0.5
+* URLRequest
+    * networkServiceType overrides configuration’s value
+* URLSession’s delegateQueue
+    * qualityOfService: userInteractive, userInitiated, utility, background
+
+Custom Delegate
+* Uses background sessions to download or upload content while it’s not running
+* Performs custom authentication or SSL certificate verification
+* Decides whether a transfer should be downloaded to disk or displayed based on the MIME type or other response info
+* Limits caching or HTTP redirects programmatically
+
