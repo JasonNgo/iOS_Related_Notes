@@ -1,153 +1,155 @@
-# Networking with URLSession
+Networking with URLSession
+
+Notes taken for the Networking with URLSession course from: http://www.raywenderlich.com
 
 REST API
 - A REST API is an application program interface that uses HTTP requests to transfer data between a client and a server
 - AKA restful web service
 
 URLSession
-* Every URLSession requires a URLSessionConfiguration instance
-    * Configuration controls things such as:
-        * network service type, timeouts, caching, http headers
-* From URLSession, we create URLSessionTask instances to make service requests
-* It’s more efficient to create multiple tasks per session than to create multiple sessions for multiple tasks
-    * Example: One session for downloading a video and another session for downloading a video in the background
-* You can handle the server response in two different ways:
-    * Completion handler
-    * Delegation
-* You can use URLSession.shared for no configuration, quick data tasks 
-    * Must use completion handler, can’t use delegation
-* URLSessionConfiguration:
-    * .default 
-        * Uses persistent disk based cache, except when result is downloaded to a file
-        * Stores credentials in the user’s keychain
-        * Default values for properties
-    * .ephemeral
-        * Same as default except doesn’t store cookies, credentials or cache data to disk
-        * Useful for privacy because none of the data is persisted
-    * background(withIdentifier:)
-        * Allows app to transfer data while in the background
-        * hands control over to system which handles transfer in a separate process
-        * must provide ID in case where system terminates and relaunches the app to reconstruct session
+- Every URLSession requires a URLSessionConfiguration instance
+   - Configuration controls things such as:
+        -  network service type, timeouts, caching, http headers
+- From URLSession, we create URLSessionTask instances to make service requests
+- It’s more efficient to create multiple tasks per session than to create multiple sessions for multiple tasks
+    - Example: One session for downloading a video and another session for downloading a video in the background
+- You can handle the server response in two different ways:
+    - Completion handler
+    - Delegation
+- You can use URLSession.shared for no configuration, quick data tasks 
+    - Must use completion handler, can’t use delegation
+- URLSessionConfiguration:
+    - .default 
+        - Uses persistent disk based cache, except when result is downloaded to a file
+        - Stores credentials in the user’s keychain
+        - Default values for properties
+    - .ephemeral
+        - Same as default except doesn’t store cookies, credentials or cache data to disk
+        - Useful for privacy because none of the data is persisted
+    - background(withIdentifier:)
+        - Allows app to transfer data while in the background
+        - hands control over to system which handles transfer in a separate process
+        - must provide ID in case where system terminates and relaunches the app to reconstruct session
 
 Network Reliability
-* configuration.allowsCellularAcess - class var to set if app is allowed to use data
-* configuration.waitsForConnectivity - allows app to periodic check for network and attempt to retry task
+- configuration.allowsCellularAcess - class var to set if app is allowed to use data
+- configuration.waitsForConnectivity - allows app to periodic check for network and attempt to retry task
 
-* If you want to allow for cellular access you can use Multipath TCP
-    * .handover - switches to cellular when your app loses wi-fi
-    * .interact - networking switches to cellular when the wifi signal gets weak (what siri uses)
+- If you want to allow for cellular access you can use Multipath TCP
+    - .handover - switches to cellular when your app loses wi-fi
+    - .interact - networking switches to cellular when the wifi signal gets weak (what siri uses)
 
 URLSessionTask
-* URLSessionDataTask
-    * response in memory
-    * not supported in background sessions
-* URLSessionUploadTask
-    *  Easier to provide request body
-* URLSessionDownloadTask
-    * response written to file on disk
+- URLSessionDataTask
+    - response in memory
+    - not supported in background sessions
+- URLSessionUploadTask
+    - Easier to provide request body
+- URLSessionDownloadTask
+    - response written to file on disk
 
 URLRequest
-* Reasons to create requests:
-    * Modify the HTTP method, headers and body before sending the request
-    * Override configuration settings for the request
-* If configuration value is more restrictive, it will take precedence
-* HTTP Headers
-    * Pass additional information with a request or response
+- Reasons to create requests:
+    - Modify the HTTP method, headers and body before sending the request
+    - Override configuration settings for the request
+- If configuration value is more restrictive, it will take precedence
+- HTTP Headers
+    - Pass additional information with a request or response
 
 URLSessionDataTask
-* Meant for short tasks like authentication or fetching a token
-* DataTasks save the response in memory
+- Meant for short tasks like authentication or fetching a token
+- DataTasks save the response in memory
 
 URLSessionDownloadTask
-* Saves the result to a file 
-* Response returns a URL pointing to the location on the file system where the object is saved
-* This location is temporary, so we need to read and process the data or save it to a permanent location
-* downloadTask has features where
-    * if it’s canceled or fails before completing the download you can save the resumeData and resume the download later
-    * Converts server-side errors into NSError objects, reports via completionHandler error param
+- Saves the result to a file 
+- Response returns a URL pointing to the location on the file system where the object is saved
+- This location is temporary, so we need to read and process the data or save it to a permanent location
+- downloadTask has features where
+    - if it’s canceled or fails before completing the download you can save the resumeData and resume the download later
+    - Converts server-side errors into NSError objects, reports via completionHandler error param
 
 Priority Settings
-* You can suggest priority levels at different levels of the URLSession hierarchy
-* SessionConfiguration can tell the system that it’s transferring a specific type of data. OS can use this info to set priorities and balance performance against battery load.
-    * networkServiceType = hint to OS
-* URLSessionTask
-    * priority hint to server 0 (low) - 1 (high); default = 0.5
-* URLRequest
-    * networkServiceType overrides configuration’s value
-* URLSession’s delegateQueue
-    * qualityOfService: userInteractive, userInitiated, utility, background
+- You can suggest priority levels at different levels of the URLSession hierarchy
+- SessionConfiguration can tell the system that it’s transferring a specific type of data. OS can use this info to set priorities and balance performance against battery load.
+    - networkServiceType = hint to OS
+- URLSessionTask
+    - priority hint to server 0 (low) - 1 (high); default = 0.5
+- URLRequest
+    - networkServiceType overrides configuration’s value
+- URLSession’s delegateQueue
+    - qualityOfService: userInteractive, userInitiated, utility, background
 
-Custom Delegate
-* Uses background sessions to download or upload content while it’s not running
-* Performs custom authentication or SSL certificate verification
-* Decides whether a transfer should be downloaded to disk or displayed based on the MIME type or other response info
-* Limits caching or HTTP redirects programmatically
+Custom Delegate (when to use)
+- Uses background sessions to download or upload content while it’s not running
+- Performs custom authentication or SSL certificate verification
+- Decides whether a transfer should be downloaded to disk or displayed based on the MIME type or other response info
+- Limits caching or HTTP redirects programmatically
 
 Authentication and Cookies
-* Basic HTTP authentication only encodes a users credentials in base 64
-    * translates a string of 8 bit characters to a string of 6 bit characters
-* Digest access
-    * applies a hash function to the credentials
-* HTTPS
-    * Sending credentials to HTTPS address will encrypt the credentials using the SSL encryption
-    * Basic + HTTPS is a good option
-* Open ID Connect (OAuth 2.0)
-    * Client signs in and receives an access token and refresh token
-    * Uses access token to transfer data
-    * Access token only work for certain time, need to use refresh token to fetch new access token
-* X.509 Certificates
-    * HTTPS uses X.509 certificates to establish trust between a client and a server
-    * If server uses a self signed certificate, app that interacts with server needs to write delegate method to check it
+- Basic HTTP authentication only encodes a users credentials in base 64
+    - translates a string of 8 bit characters to a string of 6 bit characters
+- Digest access
+    - applies a hash function to the credentials
+- HTTPS
+    - Sending credentials to HTTPS address will encrypt the credentials using the SSL encryption
+    - Basic + HTTPS is a good option
+- Open ID Connect (OAuth 2.0)
+    - Client signs in and receives an access token and refresh token
+    - Uses access token to transfer data
+    - Access token only work for certain time, need to use refresh token to fetch new access token
+- X.509 Certificates
+    - HTTPS uses X.509 certificates to establish trust between a client and a server
+    - If server uses a self signed certificate, app that interacts with server needs to write delegate method to check it
 
-* Secret Key encryption = symmetric encryption
-    * ex: caesar cipher - shifts alphabet around by some number of places
-    * cheap to encrypt/decrypt
-    * good for large data
-    * needs a secure channel to set/change key
-* Public Key encryption = asymmetric encryption
-    * relies on a complex calculation between two keys
-    * make public key public, so anyone can encrypt data they send to you
-    * only you can decrypt it using your private key
-    * not good for large data. 
-    * useful for setting up secret key
-    * X.509 certificates verify public keys
-* Combining:
-    * Check public key for authenticity using X.509 certificates
-    * Generate a secret key
-    * Use high-cost public key encryption to communicate secret key
-    * Use secret-key encryption to transfer data
+- Secret Key encryption = symmetric encryption
+    - ex: caesar cipher - shifts alphabet around by some number of places
+    - cheap to encrypt/decrypt
+    - good for large data
+    - needs a secure channel to set/change key
+- Public Key encryption = asymmetric encryption
+    - relies on a complex calculation between two keys
+    - make public key public, so anyone can encrypt data they send to you
+    - only you can decrypt it using your private key
+    - not good for large data. 
+    - useful for setting up secret key
+    - X.509 certificates verify public keys
+- Combining:
+    - Check public key for authenticity using X.509 certificates
+    - Generate a secret key
+    - Use high-cost public key encryption to communicate secret key
+    - Use secret-key encryption to transfer data
 
 Storing Authentication Data
-* You can create URL credentials for:
-    * client certificates
-        * must specify how long a credential is stored
-    * server trust authentication
-    * user/password pair
-* Keychain
-    * iOS - Apps keychain
-    * MacOS - User’s keychain
+- You can create URL credentials for:
+    - client certificates
+        - must specify how long a credential is stored
+    - server trust authentication
+    - user/password pair
+- Keychain
+    - iOS - Apps keychain
+    - MacOS - User’s keychain
 
 Cookies
-* Small text file generated by server to identify a user on subsequent requests
-    * ex: shopping cart, user preferences, registration details
-* Session cookie lets the user access server resources without having to re-authenticate
-    * not stored on clients disk
-    * only lasts a few minutes
-* Stored cookie used to retrieve user preferences and its stored for future sessions
-* You can control cookie usage in the URLSessionConfiguration
+- Small text file generated by server to identify a user on subsequent requests
+    - ex: shopping cart, user preferences, registration details
+- Session cookie lets the user access server resources without having to re-authenticate
+    - not stored on clients disk
+    - only lasts a few minutes
+- Stored cookie used to retrieve user preferences and its stored for future sessions
+- You can control cookie usage in the URLSessionConfiguration
 
 App Transport Security (ATS)
-* Enforces best practise for secure network connections
-* Implemented below URLSession and NSURLSession for its hard to bypass
-* Requirements:
-    * Server uses HTTPS
-    * X.509 server cert issued by certificate authority
-* Apple provides a SafariService module to take advantage of Safari capabilities without having to set ATS values
-    * useful for when you don’t need custom configurations for ATS
+- Enforces best practise for secure network connections
+- Implemented below URLSession and NSURLSession for its hard to bypass
+- Requirements:
+    - Server uses HTTPS
+    - X.509 server cert issued by certificate authority
+- Apple provides a SafariService module to take advantage of Safari capabilities without having to set ATS values
+    - useful for when you don’t need custom configurations for ATS
 
 Operation Queue
-* URLSession is an operation queue.
-* URLSessions delegate and completion methods run on another OperationQueue
-    * You can customize this OperationQueue if necessary
-    * By default the OperationQueue is a serial queue.
-    * You can change it to a concurrent queue to improve your apps speed
+- URLSession is an operation queue.
+- URLSessions delegate and completion methods run on another OperationQueue
+    - You can customize this OperationQueue if necessary
+    - By default the OperationQueue is a serial queue.
+    - You can change it to a concurrent queue to improve your apps speed
